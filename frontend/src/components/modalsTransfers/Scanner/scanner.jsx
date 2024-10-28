@@ -124,6 +124,20 @@ export default function ModalScanner({
     setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
   };
 
+  // Função para lidar com o pagamento
+  const handlePayment = () => {
+    // Aqui você pode adicionar a lógica para processar o pagamento
+    alert("Pagamento confirmado!");
+    onClose(); // Fecha o modal após a confirmação do pagamento
+  };
+
+  // Função para cancelar o pagamento
+  const handleCancelPayment = () => {
+    setPaymentData(null);
+    setUseCamera(true); // Volta para o modo de escaneamento
+    setScanResult(""); // Limpa o resultado do escaneamento
+  };
+
   return (
     <div className={modalStyles.modal}>
       {paymentData ? (
