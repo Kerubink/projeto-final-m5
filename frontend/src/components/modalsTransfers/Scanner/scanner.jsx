@@ -19,25 +19,24 @@ export default function ModalScanner({
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const intervalRef = useRef(null);
+  const streamRef = useRef(null); // Armazenar a referência do stream
 
   useEffect(() => {
     const startCamera = async () => {
       if (videoRef.current) {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        streamRef.current = await navigator.mediaDevices.getUserMedia({
           video: { facingMode },
         });
-        videoRef.current.srcObject = stream;
+        videoRef.current.srcObject = streamRef.current;
         videoRef.current.play();
       }
     };
 
     const stopCamera = () => {
-      if (videoRef.current) {
-        const stream = videoRef.current.srcObject;
-        if (stream) {
-          const tracks = stream.getTracks();
-          tracks.forEach((track) => track.stop());
-        }
+      if (streamRef.current) {
+        const tracks = streamRef.current.getTracks();
+        tracks.forEach((track) => track.stop());
+        streamRef.current = null; // Limpar a referência do stream
       }
     };
 
