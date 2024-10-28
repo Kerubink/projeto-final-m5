@@ -19,30 +19,31 @@ export default function ModalScanner({
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const intervalRef = useRef(null);
-  const streamRef = useRef(null); // Armazenar a referência do stream
 
   useEffect(() => {
     const startCamera = async () => {
       if (videoRef.current) {
-        streamRef.current = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode },
         });
-        videoRef.current.srcObject = streamRef.current;
+        videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
     };
 
     const stopCamera = () => {
-      if (streamRef.current) {
-        const tracks = streamRef.current.getTracks();
-        tracks.forEach((track) => track.stop());
-        streamRef.current = null; // Limpar a referência do stream
+      if (videoRef.current) {
+        const stream = videoRef.current.srcObject;
+        if (stream) {
+          const tracks = stream.getTracks();
+          tracks.forEach((track) => track.stop());
+        }
       }
     };
 
     if (useCamera) {
       startCamera();
-      intervalRef.current = setInterval(handleScan, 100); // Inicia a leitura a cada 100ms
+      intervalRef.current = setInterval(handleScan, 200); // Inicia a leitura a cada 200ms
     } else {
       stopCamera();
       clearInterval(intervalRef.current); // Limpa o intervalo ao parar a câmera
@@ -60,9 +61,15 @@ export default function ModalScanner({
     const video = videoRef.current;
 
     if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
+      // Ajuste as dimensões do canvas para a qualidade do vídeo
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      canvas.width = width;
+      canvas.height = height;
+
+      context.drawImage(video, 0, 0, width, height);
+      const imageData = context.getImageData(0, 0, width, height);
+      const qrCode = jsQR(imageData.data, width, height);
       if (qrCode) {
         handleScanResult(qrCode.data);
       }
@@ -83,7 +90,7 @@ export default function ModalScanner({
 
       setPaymentData(parsedData);
       onQRCodeRead(qrData);
-      setUseCamera(false); // Desativar a câmera após ler o QR Code
+      setUseCamera(false);
     } catch (error) {
       alert("Erro ao ler o QR Code: Formato inválido.");
     }
@@ -102,12 +109,7 @@ export default function ModalScanner({
           canvas.width = imgElement.width;
           canvas.height = imgElement.height;
           context.drawImage(imgElement, 0, 0);
-          const imageData = context.getImageData(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
           const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
           if (qrCode) {
             handleScanResult(qrCode.data);
@@ -133,13 +135,8 @@ export default function ModalScanner({
 
   const handleCancelPayment = () => {
     setPaymentData(null);
-    setUseCamera(true); // Reinicia o uso da câmera
+    setUseCamera(true);
     setScanResult("");
-  };
-
-  const handleClose = () => {
-    setUseCamera(false); // Desativa a câmera ao fechar o modal
-    onClose();
   };
 
   return (
@@ -207,7 +204,7 @@ export default function ModalScanner({
           )}
 
           <div className={scannerStyles.content}>
-            <button className={modalStyles.closeButton} onClick={handleClose}>
+            <button className={modalStyles.closeButton} onClick={onClose}>
               <ArrowBackIosNewRoundedIcon />
             </button>
 
@@ -216,10 +213,7 @@ export default function ModalScanner({
                 <input
                   type="radio"
                   checked={useCamera}
-                  onChange={() => {
-                    setUseCamera(true);
-                    stopCamera(); // Para a câmera ao mudar para modo de arquivo
-                  }}
+                  onChange={() => setUseCamera(true)}
                   className={scannerStyles.radioInput}
                 />
                 <PhotoCameraIcon className={scannerStyles.icon} />
@@ -229,10 +223,7 @@ export default function ModalScanner({
                 <input
                   type="radio"
                   checked={!useCamera}
-                  onChange={() => {
-                    setUseCamera(false);
-                    stopCamera(); // Para a câmera ao mudar para modo de arquivo
-                  }}
+                  onChange={() => setUseCamera(false)}
                   className={scannerStyles.radioInput}
                 />
                 <UploadIcon className={scannerStyles.icon} />
