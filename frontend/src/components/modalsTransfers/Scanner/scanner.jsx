@@ -9,7 +9,7 @@ import SwitchCameraIcon from "@mui/icons-material/SwitchCamera";
 
 export default function ModalScanner({
   onClose,
-  onQRCodeRead = () => { },
+  onQRCodeRead = () => {},
   userData,
 }) {
   const [scanResult, setScanResult] = useState("");
@@ -19,7 +19,7 @@ export default function ModalScanner({
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const intervalRef = useRef(null);
-  const streamRef = useRef(null); // Armazenar a referência do stream
+  const streamRef = useRef(null);
 
   useEffect(() => {
     const startCamera = async () => {
@@ -41,21 +41,21 @@ export default function ModalScanner({
       if (streamRef.current) {
         const tracks = streamRef.current.getTracks();
         tracks.forEach((track) => track.stop());
-        streamRef.current = null; // Limpar a referência do stream
+        streamRef.current = null;
       }
     };
 
     if (useCamera) {
       startCamera();
-      intervalRef.current = setInterval(handleScan, 100); // Inicia a leitura a cada 100ms
+      intervalRef.current = setInterval(handleScan, 100);
     } else {
       stopCamera();
-      clearInterval(intervalRef.current); // Limpa o intervalo ao parar a câmera
+      clearInterval(intervalRef.current);
     }
 
     return () => {
-      clearInterval(intervalRef.current); // Limpa o intervalo ao desmontar
-      stopCamera(); // Para a câmera quando o componente é desmontado
+      stopCamera();
+      clearInterval(intervalRef.current);
     };
   }, [useCamera, facingMode]);
 
@@ -65,7 +65,6 @@ export default function ModalScanner({
     const video = videoRef.current;
 
     if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
-      // Ajusta o tamanho do canvas para o vídeo
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -91,7 +90,7 @@ export default function ModalScanner({
 
       setPaymentData(parsedData);
       onQRCodeRead(qrData);
-      setUseCamera(false); // Desativar a câmera após ler o QR Code
+      setUseCamera(false);
     } catch (error) {
       alert("Erro ao ler o QR Code: Formato inválido.");
     }
@@ -129,24 +128,55 @@ export default function ModalScanner({
   };
 
   const toggleCamera = async () => {
-    await stopCamera(); // Para a câmera atual
-    setFacingMode((prev) => (prev === "environment" ? "user" : "environment")); // Alterna a câmera
-    await startCamera(); // Inicia a nova câmera
+    await stopCamera();
+    setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
+    await startCamera();
   };
 
-  const handlePayment = () => {
-    alert("Pagamento confirmado!");
-    onClose(); // Fecha o modal após a confirmação do pagamento
+  const handlePayment = async () => {
+    if (!paymentData) return;
+
+    const transaction = {
+      fromAccount: userData.accountNumber,
+      toAccount: paymentData.accountNumber,
+      value: paymentData.value,
+      description: paymentData.description || "Pagamento via QR Code",
+      transactionId: paymentData.transactionId,
+      validUntil: paymentData.validUntil,
+      userName: paymentData.userName,
+    };
+
+    try {
+      const response = await fetch(
+        "https://projeto-final-m5-api.onrender.com/api/transactions",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(transaction),
+        }
+      );
+
+      if (response.ok) {
+        alert("Pagamento confirmado!");
+        onClose();
+      } else {
+        const error = await response.json();
+        alert(`Erro: ${error.message}`);
+      }
+    } catch (error) {
+      console.error("Erro na transação:", error);
+      alert("Erro ao processar a transação. Tente novamente.");
+    }
   };
 
   const handleCancelPayment = () => {
     setPaymentData(null);
-    setUseCamera(true); // Reinicia o uso da câmera
+    setUseCamera(true);
     setScanResult("");
   };
 
   const handleClose = () => {
-    setUseCamera(false); // Desativa a câmera ao fechar o modal
+    setUseCamera(false);
     onClose();
   };
 
@@ -154,39 +184,20 @@ export default function ModalScanner({
     <div className={modalStyles.modal}>
       {paymentData ? (
         <div className={scannerStyles.paymentOverlay}>
-          <h2 className={scannerStyles.title}>Dados do Pagamento:</h2>
-          <div className={`${scannerStyles.paymentInfo} ${scannerStyles.card}`}>
-            <p>
-              <strong>Nome do Recebedor:</strong> {paymentData.userName}
-            </p>
-            <p>
-              <strong>Conta:</strong> {paymentData.accountNumber}
-            </p>
-            <p>
-              <strong>Valor:</strong> R$ {paymentData.value}
-            </p>
-            <p>
-              <strong>Descrição:</strong>{" "}
-              {paymentData.description || "Pagamento via QR Code"}
-            </p>
-            <p>
-              <strong>ID Transação:</strong> {paymentData.transactionId}
-            </p>
-            <p>
-              <strong>Validade:</strong> {paymentData.validUntil}
-            </p>
+          <h2>Dados do Pagamento:</h2>
+          <div className={scannerStyles.paymentInfo}>
+            <p><strong>Nome do Recebedor:</strong> {paymentData.userName}</p>
+            <p><strong>Conta:</strong> {paymentData.accountNumber}</p>
+            <p><strong>Valor:</strong> R$ {paymentData.value}</p>
+            <p><strong>Descrição:</strong> {paymentData.description}</p>
+            <p><strong>ID Transação:</strong> {paymentData.transactionId}</p>
+            <p><strong>Validade:</strong> {paymentData.validUntil}</p>
           </div>
           <div className={scannerStyles.paymentButtons}>
-            <button
-              className={`${scannerStyles.paymentButton} ${scannerStyles.confirmButton}`}
-              onClick={handlePayment}
-            >
+            <button onClick={handlePayment} className={scannerStyles.confirmButton}>
               Confirmar
             </button>
-            <button
-              className={`${scannerStyles.cancelButton} ${scannerStyles.cancelButton}`}
-              onClick={handleCancelPayment}
-            >
+            <button onClick={handleCancelPayment} className={scannerStyles.cancelButton}>
               Cancelar
             </button>
           </div>
@@ -195,65 +206,23 @@ export default function ModalScanner({
         <>
           {useCamera ? (
             <>
-              <video
-                ref={videoRef}
-                className={scannerStyles.videoBackground}
-                autoPlay
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-              <canvas
-                ref={canvasRef}
-                style={{ display: "none" }}
-              />
+              <video ref={videoRef} className={scannerStyles.videoBackground} autoPlay />
+              <canvas ref={canvasRef} style={{ display: "none" }} />
               <div className={scannerStyles.videoOverlay}></div>
             </>
           ) : (
             <label className={scannerStyles.fileInputLabel}>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className={scannerStyles.fileInput}
-              />
-              <span className={scannerStyles.fileInputText}>Carregar Arquivo</span>
+              <input type="file" accept="image/*" onChange={handleFileChange} />
+              <span>Carregar Imagem</span>
             </label>
           )}
-
-          <div className={scannerStyles.content}>
-            <button className={modalStyles.closeButton} onClick={handleClose}>
+          <div className={scannerStyles.controls}>
+            <button onClick={toggleCamera}>
+              <SwitchCameraIcon />
+            </button>
+            <button onClick={handleClose}>
               <ArrowBackIosNewRoundedIcon />
             </button>
-
-            <div className={scannerStyles.radioButtons}>
-              <label className={scannerStyles.radioLabel}>
-                <input
-                  type="radio"
-                  checked={useCamera}
-                  onChange={() => {
-                    setUseCamera(true);
-                    stopCamera(); // Para a câmera ao mudar para modo de arquivo
-                  }}
-                  className={scannerStyles.radioInput}
-                />
-                <PhotoCameraIcon className={scannerStyles.icon} />
-                <span>Usar Câmera</span>
-              </label>
-              <label className={scannerStyles.radioLabel}>
-                <input
-                  type="radio"
-                  checked={!useCamera}
-                  onChange={() => {
-                    setUseCamera(false);
-                    stopCamera(); // Para a câmera ao mudar para modo de arquivo
-                  }}
-                  className={scannerStyles.radioInput}
-                />
-                <UploadIcon className={scannerStyles.icon} />
-                <span>Carregar Imagem</span>
-              </label>
-            </div>
-
-
           </div>
         </>
       )}
