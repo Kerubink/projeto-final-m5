@@ -42,7 +42,7 @@ export default function ModalScanner({
 
     if (useCamera) {
       startCamera();
-      intervalRef.current = setInterval(handleScan, 100); // Inicia a leitura a cada 100ms
+      intervalRef.current = setInterval(handleScan, 200); // Lê a cada 200ms
     } else {
       stopCamera();
       clearInterval(intervalRef.current); // Limpa o intervalo ao parar a câmera
@@ -60,9 +60,14 @@ export default function ModalScanner({
     const video = videoRef.current;
 
     if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      canvas.width = width; // Define o canvas para a largura do vídeo
+      canvas.height = height; // Define o canvas para a altura do vídeo
+
+      context.drawImage(video, 0, 0, width, height);
+      const imageData = context.getImageData(0, 0, width, height);
+      const qrCode = jsQR(imageData.data, width, height);
       if (qrCode) {
         handleScanResult(qrCode.data);
       }
@@ -123,7 +128,7 @@ export default function ModalScanner({
   const toggleCamera = async () => {
     await stopCamera(); // Para a câmera atual
     setFacingMode((prev) => (prev === "environment" ? "user" : "environment")); // Alterna a câmera
-    await startCamera(); // Inicia a nova câmera
+    setTimeout(async () => await startCamera(), 500); // Inicia a nova câmera após um pequeno atraso
   };
 
   const handlePayment = () => {
