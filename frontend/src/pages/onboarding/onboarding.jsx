@@ -10,17 +10,17 @@ const Onboarding = () => {
     {
       title: "Bem-vindo ao Lunar Pay",
       description: "Seu banco digital moderno e fácil de usar.",
-      img: "public/undraw_mobile_pay_re_sjb8.svg",
+      img: "/undraw_mobile_pay_re_sjb8.svg",
     },
     {
       title: "Controle Financeiro",
       description: "Acompanhe suas finanças e transações em tempo real.",
-      img: "public/undraw_online_payments_re_y8f2.svg",
+      img: "/undraw_online_payments_re_y8f2.svg",
     },
     {
       title: "Cartões Exclusivos",
       description: "Solicite cartões de débito e crédito com um clique.",
-      img: "public/undraw_credit_card_re_blml.svg",
+      img: "/undraw_credit_card_re_blml.svg",
     },
   ];
 
