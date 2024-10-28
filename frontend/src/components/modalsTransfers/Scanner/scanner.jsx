@@ -252,9 +252,7 @@ export default function ModalScanner({
               </label>
             </div>
 
-            <button onClick={toggleCamera} className={scannerStyles.toggleCamera}>
-              <SwitchCameraIcon />
-            </button>
+            
           </div>
         </>
       )}
