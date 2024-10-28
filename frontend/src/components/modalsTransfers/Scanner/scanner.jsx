@@ -5,11 +5,10 @@ import scannerStyles from "./scanner.module.css";
 import ArrowBackIosNewRoundedIcon from "@mui/icons-material/ArrowBackIosNewRounded";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import UploadIcon from "@mui/icons-material/Upload";
-import SwitchCameraIcon from "@mui/icons-material/SwitchCamera";
 
 export default function ModalScanner({
   onClose,
-  onQRCodeRead = () => { },
+  onQRCodeRead = () => {},
   userData,
 }) {
   const [scanResult, setScanResult] = useState("");
@@ -19,7 +18,9 @@ export default function ModalScanner({
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const intervalRef = useRef(null);
-  const streamRef = useRef(null); // Armazenar a referência do stream
+  const streamRef = useRef(null);
+  
+  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
     const startCamera = async () => {
@@ -41,7 +42,7 @@ export default function ModalScanner({
       if (streamRef.current) {
         const tracks = streamRef.current.getTracks();
         tracks.forEach((track) => track.stop());
-        streamRef.current = null; // Limpar a referência do stream
+        streamRef.current = null; 
       }
     };
 
@@ -65,7 +66,6 @@ export default function ModalScanner({
     const video = videoRef.current;
 
     if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
-      // Ajusta o tamanho do canvas para o vídeo
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -134,10 +134,44 @@ export default function ModalScanner({
     await startCamera(); // Inicia a nova câmera
   };
 
-  const handlePayment = () => {
-    alert("Pagamento confirmado!");
-    onClose(); // Fecha o modal após a confirmação do pagamento
+  const handlePayment = async () => {
+    try {
+      const payload = {
+        senderAccountNumber: String(userData.accountNumber), // Número da conta do remetente
+        receiverAccountNumber: String(paymentData.accountNumber), // Número da conta do recebedor
+        amount: parseFloat(paymentData.value), // Valor da transferência
+        type: "transfer",
+        description: paymentData.description || "Pagamento via QR Code",
+      };
+  
+      console.log("Payload enviado:", payload); // Verifica o payload
+  
+      const response = await fetch("https://projeto-final-m5-api.onrender.com/api/transactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`, // Pega o token do localStorage
+        },
+        body: JSON.stringify(payload), // Converte o payload em JSON
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json(); // Captura o erro retornado da API
+        console.error("Erro da API:", errorData);
+        alert(`Erro na transferência: ${errorData.message}`);
+        return;
+      }
+  
+      alert("Transferência realizada com sucesso!");
+      setPaymentData(null); // Limpa os dados do pagamento após a transferência
+      onClose(); // Fecha o modal após a transferência bem-sucedida
+    } catch (error) {
+      console.error("Erro ao realizar transferência:", error);
+      alert("Falha na transferência.");
+    }
   };
+  
+   
 
   const handleCancelPayment = () => {
     setPaymentData(null);
@@ -205,7 +239,8 @@ export default function ModalScanner({
                 ref={canvasRef}
                 style={{ display: "none" }}
               />
-              <div className={scannerStyles.videoOverlay}></div>
+                    <div className={scannerStyles.videoOverlay}></div>
+
             </>
           ) : (
             <label className={scannerStyles.fileInputLabel}>
@@ -253,7 +288,7 @@ export default function ModalScanner({
               </label>
             </div>
 
-
+           
           </div>
         </>
       )}
