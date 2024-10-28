@@ -18,6 +18,7 @@ export default function ModalScanner({
   const [facingMode, setFacingMode] = useState("environment");
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     const startCamera = async () => {
@@ -26,11 +27,13 @@ export default function ModalScanner({
           video: { facingMode },
         });
         videoRef.current.srcObject = stream;
+        videoRef.current.play(); // Inicia a reprodução do vídeo
       }
     };
 
     if (useCamera) {
       startCamera();
+      intervalRef.current = setInterval(handleScan, 100); // Inicia a leitura a cada 100ms
     } else {
       if (videoRef.current) {
         const stream = videoRef.current.srcObject;
@@ -39,10 +42,11 @@ export default function ModalScanner({
           tracks.forEach((track) => track.stop());
         }
       }
+      clearInterval(intervalRef.current); // Limpa o intervalo ao parar a câmera
     }
 
     return () => {
-      // Limpar o stream da câmera ao desmontar o componente
+      clearInterval(intervalRef.current); // Limpa o intervalo ao desmontar
       if (videoRef.current) {
         const stream = videoRef.current.srcObject;
         if (stream) {
@@ -66,7 +70,6 @@ export default function ModalScanner({
         handleScanResult(qrCode.data);
       }
     }
-    requestAnimationFrame(handleScan); // Continue scanning
   };
 
   const handleScanResult = (qrData) => {
@@ -124,18 +127,15 @@ export default function ModalScanner({
     setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
   };
 
-  // Função para lidar com o pagamento
   const handlePayment = () => {
-    // Aqui você pode adicionar a lógica para processar o pagamento
     alert("Pagamento confirmado!");
     onClose(); // Fecha o modal após a confirmação do pagamento
   };
 
-  // Função para cancelar o pagamento
   const handleCancelPayment = () => {
     setPaymentData(null);
-    setUseCamera(true); // Volta para o modo de escaneamento
-    setScanResult(""); // Limpa o resultado do escaneamento
+    setUseCamera(true);
+    setScanResult("");
   };
 
   return (
@@ -187,7 +187,6 @@ export default function ModalScanner({
                 ref={videoRef}
                 className={scannerStyles.videoBackground}
                 autoPlay
-                onLoadedMetadata={handleScan}
               />
               <canvas ref={canvasRef} style={{ display: "none" }} />
             </>
