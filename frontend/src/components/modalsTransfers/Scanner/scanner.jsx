@@ -9,7 +9,7 @@ import SwitchCameraIcon from "@mui/icons-material/SwitchCamera";
 
 export default function ModalScanner({
   onClose,
-  onQRCodeRead = () => {},
+  onQRCodeRead = () => { },
   userData,
 }) {
   const [scanResult, setScanResult] = useState("");
@@ -205,6 +205,7 @@ export default function ModalScanner({
                 ref={canvasRef}
                 style={{ display: "none" }}
               />
+              <div className={scannerStyles.videoOverlay}></div>
             </>
           ) : (
             <label className={scannerStyles.fileInputLabel}>
@@ -252,7 +253,7 @@ export default function ModalScanner({
               </label>
             </div>
 
-            
+
           </div>
         </>
       )}
