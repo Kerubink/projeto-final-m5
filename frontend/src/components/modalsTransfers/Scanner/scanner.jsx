@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import QrScanner from "react-qr-scanner";
 import jsQR from "jsqr";
 import modalStyles from "../modalGlobal.module.css";
@@ -16,7 +16,7 @@ export default function ModalScanner({
   const [scanResult, setScanResult] = useState("");
   const [useCamera, setUseCamera] = useState(true);
   const [paymentData, setPaymentData] = useState(null);
-  const [cameraFacingMode, setCameraFacingMode] = useState("environment"); // Padrão para câmera traseira
+  const [cameraFacingMode, setCameraFacingMode] = useState("user"); // Padrão para câmera frontal
 
   const handleScan = (data) => {
     if (data) {
@@ -125,9 +125,7 @@ export default function ModalScanner({
   };
 
   const toggleCamera = () => {
-    setCameraFacingMode((prev) =>
-      prev === "user" ? "environment" : "user"
-    );
+    setCameraFacingMode((prev) => (prev === "user" ? "environment" : "user"));
   };
 
   return (
