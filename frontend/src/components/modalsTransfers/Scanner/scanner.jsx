@@ -19,9 +19,18 @@ export default function ModalScanner({
 
   useEffect(() => {
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-    // Se for mobile, usar a câmera traseira; se for desktop, usar a frontal
-    if (!isMobile) {
-      setCameraFacingMode("user");
+    if (isMobile) {
+      // Verifica se a câmera traseira está disponível
+      navigator.mediaDevices.enumerateDevices().then((devices) => {
+        const hasBackCamera = devices.some(
+          (device) => device.kind === "videoinput" && device.label.includes("back")
+        );
+
+        // Se a câmera traseira estiver disponível, usá-la; caso contrário, usar a frontal
+        setCameraFacingMode(hasBackCamera ? "environment" : "user");
+      });
+    } else {
+      setCameraFacingMode("user"); // Usar a câmera frontal em desktops
     }
   }, []);
 
