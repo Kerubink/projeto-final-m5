@@ -172,6 +172,7 @@ export default function ModalScanner({
                 onError={handleError}
                 onScan={handleScan}
                 className={scannerStyles.videoBackground}
+                facingMode="environment"
               />
               <div className={scannerStyles.videoOverlay}></div>
             </>
