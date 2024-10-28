@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import QrScanner from "react-qr-scanner";
 import jsQR from "jsqr";
 import modalStyles from "../modalGlobal.module.css";
@@ -15,6 +15,15 @@ export default function ModalScanner({
   const [scanResult, setScanResult] = useState("");
   const [useCamera, setUseCamera] = useState(true);
   const [paymentData, setPaymentData] = useState(null);
+  const [cameraFacingMode, setCameraFacingMode] = useState("environment"); // Padrão para câmera traseira
+
+  useEffect(() => {
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    // Se for mobile, usar a câmera traseira; se for desktop, usar a frontal
+    if (!isMobile) {
+      setCameraFacingMode("user");
+    }
+  }, []);
 
   const handleScan = (data) => {
     if (data) {
@@ -172,7 +181,7 @@ export default function ModalScanner({
                 onError={handleError}
                 onScan={handleScan}
                 className={scannerStyles.videoBackground}
-                facingMode="environment"
+                facingMode={cameraFacingMode} // Usar a configuração da câmera
               />
               <div className={scannerStyles.videoOverlay}></div>
             </>
@@ -184,8 +193,7 @@ export default function ModalScanner({
                 onChange={handleFileChange}
                 className={scannerStyles.fileInput}
               />
-              <span className={scannerStyles.fileInputText}>Carregar Arquivo</span>{" "}
-              {/* Texto opcional */}
+              <span className={scannerStyles.fileInputText}>Carregar Arquivo</span>
             </label>
           )}
 
