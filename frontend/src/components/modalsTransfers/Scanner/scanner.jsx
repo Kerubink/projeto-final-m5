@@ -11,6 +11,7 @@ export default function ModalScanner({ onClose, onQRCodeRead = () => {}, userDat
   const [useCamera, setUseCamera] = useState(true);
   const [paymentData, setPaymentData] = useState(null);
   const videoRef = useRef(null); // Referência para o vídeo
+  const canvasRef = useRef(null); // Referência para o canvas
 
   const handleScan = (data) => {
     if (data) {
@@ -115,10 +116,8 @@ export default function ModalScanner({ onClose, onQRCodeRead = () => {}, userDat
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { exact: "environment" } }, // Usar a câmera traseira
       });
-      videoRef.current = document.createElement("video");
       videoRef.current.srcObject = stream;
       videoRef.current.play();
-      document.body.appendChild(videoRef.current); // Adiciona o vídeo ao DOM
       requestAnimationFrame(tick);
     } catch (error) {
       console.error("Erro ao acessar a câmera:", error);
@@ -126,8 +125,8 @@ export default function ModalScanner({ onClose, onQRCodeRead = () => {}, userDat
   };
 
   const tick = () => {
-    if (videoRef.current) {
-      const canvas = document.createElement("canvas");
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
       const context = canvas.getContext("2d");
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
@@ -149,8 +148,7 @@ export default function ModalScanner({ onClose, onQRCodeRead = () => {}, userDat
         const stream = videoRef.current.srcObject;
         const tracks = stream.getTracks();
         tracks.forEach((track) => track.stop()); // Para a transmissão da câmera
-        document.body.removeChild(videoRef.current); // Remove o vídeo do DOM
-        videoRef.current = null; // Limpa a referência
+        videoRef.current.srcObject = null; // Limpa a referência
       }
     }
   }, [useCamera]);
@@ -179,21 +177,26 @@ export default function ModalScanner({ onClose, onQRCodeRead = () => {}, userDat
         </div>
       ) : (
         <>
-          {useCamera ? (
-            <>
-              <div className={scannerStyles.videoOverlay}></div>
-            </>
-          ) : (
-            <label className={scannerStyles.fileInputLabel}>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className={scannerStyles.fileInput}
-              />
-              <span className={scannerStyles.fileInputText}>Carregar Arquivo</span>
-            </label>
+          {useCamera && (
+            <div className={scannerStyles.videoContainer}>
+              <video ref={videoRef} className={scannerStyles.video} />
+              <canvas ref={canvasRef} style={{ display: "none" }} /> {/* Canvas oculto para processamento */}
+            </div>
           )}
+
+          <div className={scannerStyles.fileInputContainer}>
+            {!useCamera && (
+              <label className={scannerStyles.fileInputLabel}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className={scannerStyles.fileInput}
+                />
+                <span className={scannerStyles.fileInputText}>Carregar Arquivo</span>
+              </label>
+            )}
+          </div>
 
           <div className={scannerStyles.content}>
             <button className={modalStyles.closeButton} onClick={onClose}>
