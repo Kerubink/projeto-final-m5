@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import QrScanner from "react-qr-scanner";
+import React, { useState, useEffect, useRef } from "react";
 import jsQR from "jsqr";
 import modalStyles from "../modalGlobal.module.css";
 import scannerStyles from "./scanner.module.css";
@@ -16,36 +15,79 @@ export default function ModalScanner({
   const [scanResult, setScanResult] = useState("");
   const [useCamera, setUseCamera] = useState(true);
   const [paymentData, setPaymentData] = useState(null);
-  const [cameraFacingMode, setCameraFacingMode] = useState("user"); // Padrão para câmera frontal
+  const [facingMode, setFacingMode] = useState("environment");
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
-  const handleScan = (data) => {
-    if (data) {
-      const qrData =
-        typeof data === "object" && data !== null ? data.text : data;
-      setScanResult(qrData);
+  useEffect(() => {
+    const startCamera = async () => {
+      if (videoRef.current) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode },
+        });
+        videoRef.current.srcObject = stream;
+      }
+    };
 
-      try {
-        const parsedData = JSON.parse(qrData);
-
-        // Validação da data de validade
-        const currentDate = new Date();
-        const validUntil = new Date(parsedData.validUntil);
-
-        if (validUntil < currentDate) {
-          alert("QR Code expirado ou inválido.");
-          return; // Impede a continuação se o QR Code estiver expirado
+    if (useCamera) {
+      startCamera();
+    } else {
+      if (videoRef.current) {
+        const stream = videoRef.current.srcObject;
+        if (stream) {
+          const tracks = stream.getTracks();
+          tracks.forEach((track) => track.stop());
         }
-
-        setPaymentData(parsedData);
-        onQRCodeRead(qrData);
-        setUseCamera(false); // Desativa a câmera após a leitura
-      } catch (error) {
-        alert("Erro ao ler o QR Code: Formato inválido.");
       }
     }
+
+    return () => {
+      // Limpar o stream da câmera ao desmontar o componente
+      if (videoRef.current) {
+        const stream = videoRef.current.srcObject;
+        if (stream) {
+          const tracks = stream.getTracks();
+          tracks.forEach((track) => track.stop());
+        }
+      }
+    };
+  }, [useCamera, facingMode]);
+
+  const handleScan = () => {
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    const video = videoRef.current;
+
+    if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
+      if (qrCode) {
+        handleScanResult(qrCode.data);
+      }
+    }
+    requestAnimationFrame(handleScan); // Continue scanning
   };
 
-  const handleError = (err) => console.error(err);
+  const handleScanResult = (qrData) => {
+    setScanResult(qrData);
+    try {
+      const parsedData = JSON.parse(qrData);
+      const currentDate = new Date();
+      const validUntil = new Date(parsedData.validUntil);
+
+      if (validUntil < currentDate) {
+        alert("QR Code expirado ou inválido.");
+        return;
+      }
+
+      setPaymentData(parsedData);
+      onQRCodeRead(qrData);
+      setUseCamera(false);
+    } catch (error) {
+      alert("Erro ao ler o QR Code: Formato inválido.");
+    }
+  };
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -68,7 +110,7 @@ export default function ModalScanner({
           );
           const qrCode = jsQR(imageData.data, canvas.width, canvas.height);
           if (qrCode) {
-            handleScan(qrCode.data);
+            handleScanResult(qrCode.data);
           } else {
             alert("QR Code não encontrado.");
           }
@@ -78,54 +120,8 @@ export default function ModalScanner({
     }
   };
 
-  const handleCancelPayment = () => {
-    setPaymentData(null);
-    setUseCamera(true);
-  };
-
-  const handlePayment = async () => {
-    if (!paymentData) {
-      alert("Nenhum dado de pagamento encontrado.");
-      return;
-    }
-
-    const { accountNumber, value, description } = paymentData;
-    const payload = {
-      senderAccountNumber: userData.accountNumber,
-      receiverAccountNumber: accountNumber,
-      amount: parseFloat(value),
-      type: "payment",
-      description: description || "Pagamento realizado via QR Code",
-    };
-
-    try {
-      const response = await fetch(
-        "https://projeto-final-m5-api.onrender.com/api/transactions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        alert(`Erro no pagamento: ${errorData.message}`);
-        return;
-      }
-
-      alert("Pagamento realizado com sucesso!");
-      onClose();
-    } catch (error) {
-      alert("Falha no pagamento.");
-    }
-  };
-
   const toggleCamera = () => {
-    setCameraFacingMode((prev) => (prev === "user" ? "environment" : "user"));
+    setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
   };
 
   return (
@@ -173,15 +169,13 @@ export default function ModalScanner({
         <>
           {useCamera ? (
             <>
-              <QrScanner
-                delay={300}
-                onError={handleError}
-                onScan={handleScan}
+              <video
+                ref={videoRef}
                 className={scannerStyles.videoBackground}
-                facingMode={cameraFacingMode} // Usar a configuração da câmera
-                key={cameraFacingMode} // Forçar a reinicialização do scanner ao mudar a câmera
+                autoPlay
+                onLoadedMetadata={handleScan}
               />
-              <div className={scannerStyles.videoOverlay}></div>
+              <canvas ref={canvasRef} style={{ display: "none" }} />
             </>
           ) : (
             <label className={scannerStyles.fileInputLabel}>
