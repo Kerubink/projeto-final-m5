@@ -27,7 +27,17 @@ export default function ModalScanner({
           video: { facingMode },
         });
         videoRef.current.srcObject = stream;
-        videoRef.current.play(); // Inicia a reprodução do vídeo
+        videoRef.current.play();
+      }
+    };
+
+    const stopCamera = () => {
+      if (videoRef.current) {
+        const stream = videoRef.current.srcObject;
+        if (stream) {
+          const tracks = stream.getTracks();
+          tracks.forEach((track) => track.stop());
+        }
       }
     };
 
@@ -35,25 +45,13 @@ export default function ModalScanner({
       startCamera();
       intervalRef.current = setInterval(handleScan, 100); // Inicia a leitura a cada 100ms
     } else {
-      if (videoRef.current) {
-        const stream = videoRef.current.srcObject;
-        if (stream) {
-          const tracks = stream.getTracks();
-          tracks.forEach((track) => track.stop());
-        }
-      }
+      stopCamera();
       clearInterval(intervalRef.current); // Limpa o intervalo ao parar a câmera
     }
 
     return () => {
       clearInterval(intervalRef.current); // Limpa o intervalo ao desmontar
-      if (videoRef.current) {
-        const stream = videoRef.current.srcObject;
-        if (stream) {
-          const tracks = stream.getTracks();
-          tracks.forEach((track) => track.stop());
-        }
-      }
+      stopCamera(); // Para a câmera quando o componente é desmontado
     };
   }, [useCamera, facingMode]);
 
@@ -123,8 +121,10 @@ export default function ModalScanner({
     }
   };
 
-  const toggleCamera = () => {
-    setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
+  const toggleCamera = async () => {
+    await stopCamera(); // Para a câmera atual
+    setFacingMode((prev) => (prev === "environment" ? "user" : "environment")); // Alterna a câmera
+    await startCamera(); // Inicia a nova câmera
   };
 
   const handlePayment = () => {
