@@ -84,7 +84,7 @@ export default function ModalScanner({
 
       setPaymentData(parsedData);
       onQRCodeRead(qrData);
-      setUseCamera(false);
+      setUseCamera(false); // Desativar a câmera após ler o QR Code
     } catch (error) {
       alert("Erro ao ler o QR Code: Formato inválido.");
     }
@@ -134,8 +134,13 @@ export default function ModalScanner({
 
   const handleCancelPayment = () => {
     setPaymentData(null);
-    setUseCamera(true);
+    setUseCamera(true); // Reinicia o uso da câmera
     setScanResult("");
+  };
+
+  const handleClose = () => {
+    setUseCamera(false); // Desativa a câmera ao fechar o modal
+    onClose();
   };
 
   return (
@@ -203,7 +208,7 @@ export default function ModalScanner({
           )}
 
           <div className={scannerStyles.content}>
-            <button className={modalStyles.closeButton} onClick={onClose}>
+            <button className={modalStyles.closeButton} onClick={handleClose}>
               <ArrowBackIosNewRoundedIcon />
             </button>
 
@@ -212,7 +217,10 @@ export default function ModalScanner({
                 <input
                   type="radio"
                   checked={useCamera}
-                  onChange={() => setUseCamera(true)}
+                  onChange={() => {
+                    setUseCamera(true);
+                    stopCamera(); // Para a câmera ao mudar para modo de arquivo
+                  }}
                   className={scannerStyles.radioInput}
                 />
                 <PhotoCameraIcon className={scannerStyles.icon} />
@@ -222,7 +230,10 @@ export default function ModalScanner({
                 <input
                   type="radio"
                   checked={!useCamera}
-                  onChange={() => setUseCamera(false)}
+                  onChange={() => {
+                    setUseCamera(false);
+                    stopCamera(); // Para a câmera ao mudar para modo de arquivo
+                  }}
                   className={scannerStyles.radioInput}
                 />
                 <UploadIcon className={scannerStyles.icon} />
