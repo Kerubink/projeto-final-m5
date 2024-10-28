@@ -6,6 +6,7 @@ import scannerStyles from "./scanner.module.css";
 import ArrowBackIosNewRoundedIcon from "@mui/icons-material/ArrowBackIosNewRounded";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import UploadIcon from "@mui/icons-material/Upload";
+import SwitchCameraIcon from "@mui/icons-material/SwitchCamera";
 
 export default function ModalScanner({
   onClose,
@@ -15,24 +16,7 @@ export default function ModalScanner({
   const [scanResult, setScanResult] = useState("");
   const [useCamera, setUseCamera] = useState(true);
   const [paymentData, setPaymentData] = useState(null);
-  const [cameraFacingMode, setCameraFacingMode] = useState("environment"); // Padrão para câmera traseira
-
-  useEffect(() => {
-    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      // Verifica se a câmera traseira está disponível
-      navigator.mediaDevices.enumerateDevices().then((devices) => {
-        const hasBackCamera = devices.some(
-          (device) => device.kind === "videoinput" && device.label.includes("back")
-        );
-
-        // Se a câmera traseira estiver disponível, usá-la; caso contrário, usar a frontal
-        setCameraFacingMode(hasBackCamera ? "environment" : "user");
-      });
-    } else {
-      setCameraFacingMode("user"); // Usar a câmera frontal em desktops
-    }
-  }, []);
+  const [cameraFacingMode, setCameraFacingMode] = useState("user"); // Padrão para câmera frontal
 
   const handleScan = (data) => {
     if (data) {
@@ -140,6 +124,12 @@ export default function ModalScanner({
     }
   };
 
+  const toggleCamera = () => {
+    setCameraFacingMode((prev) =>
+      prev === "user" ? "environment" : "user"
+    );
+  };
+
   return (
     <div className={modalStyles.modal}>
       {paymentData ? (
@@ -233,6 +223,13 @@ export default function ModalScanner({
                 <span>Carregar Arquivo</span>
               </label>
             </div>
+
+            {useCamera && (
+              <button onClick={toggleCamera} className={scannerStyles.toggleCameraButton}>
+                <SwitchCameraIcon />
+                <span>Trocar Câmera</span>
+              </button>
+            )}
           </div>
         </>
       )}
