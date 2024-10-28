@@ -24,11 +24,16 @@ export default function ModalScanner({
   useEffect(() => {
     const startCamera = async () => {
       if (videoRef.current) {
-        streamRef.current = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode },
-        });
-        videoRef.current.srcObject = streamRef.current;
-        videoRef.current.play();
+        try {
+          streamRef.current = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode },
+          });
+          videoRef.current.srcObject = streamRef.current;
+          videoRef.current.play();
+        } catch (error) {
+          console.error("Erro ao acessar a câmera:", error);
+          alert("Erro ao acessar a câmera. Verifique as permissões.");
+        }
       }
     };
 
@@ -198,7 +203,7 @@ export default function ModalScanner({
               />
               <canvas
                 ref={canvasRef}
-                style={{ display: "none", width: "100%", height: "100%" }}
+                style={{ display: "none" }}
               />
             </>
           ) : (
@@ -243,16 +248,13 @@ export default function ModalScanner({
                   className={scannerStyles.radioInput}
                 />
                 <UploadIcon className={scannerStyles.icon} />
-                <span>Carregar Arquivo</span>
+                <span>Carregar Imagem</span>
               </label>
             </div>
 
-            {useCamera && (
-              <button onClick={toggleCamera} className={scannerStyles.toggleCameraButton}>
-                <SwitchCameraIcon />
-                <span>Trocar Câmera</span>
-              </button>
-            )}
+            <button onClick={toggleCamera} className={scannerStyles.toggleCamera}>
+              <SwitchCameraIcon />
+            </button>
           </div>
         </>
       )}
