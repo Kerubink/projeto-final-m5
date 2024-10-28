@@ -181,6 +181,7 @@ export default function ModalScanner({
                 onScan={handleScan}
                 className={scannerStyles.videoBackground}
                 facingMode={cameraFacingMode} // Usar a configuração da câmera
+                key={cameraFacingMode} // Forçar a reinicialização do scanner ao mudar a câmera
               />
               <div className={scannerStyles.videoOverlay}></div>
             </>
